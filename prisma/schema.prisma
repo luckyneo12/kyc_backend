@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  phone     String   @unique
+  email     String?
+  password  String?
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  kycApplications KycApplication[]
+  auditLogs       AuditLog[]
+  reviewedApps    KycApplication[] @relation("ReviewedBy")
+}
+
+model KycApplication {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  applicationId    String   @unique
+  status           String   @default("pending")
+  currentStep      Int      @default(0)
+  
+  // JSON fields for complex data
+  personalDetails  Json?
+  identityMethod   String?
+  identityDetails  Json?
+  ocrData          Json?
+  faceMatchScore   Float?
+  address          Json?
+  bankDetails      Json?
+  nomineeDetails   Json?
+  nomineeAllocation Json?
+  panUpload        Json?
+  signature        Json?
+  financialProof   Json?
+  selfieDetails    Json?
+  documents        Json?    // Array of {type, path, uploadedAt}
+  selfie           String?
+  consent          Boolean  @default(false)
+  rejectionReason  String?
+  nsdlRequest      Json?
+  nsdlResponse     Json?
+  segments         Json?
+  bsda             String?
+  generatedPdfBase64 String?  @db.LongText
+  
+  submittedAt      DateTime?
+  reviewedAt       DateTime?
+  reviewedBy       Int?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer         User?    @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String
+  details   Json?
+  ipAddress String?
+  timestamp DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
